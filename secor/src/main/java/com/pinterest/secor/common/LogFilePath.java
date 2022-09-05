@@ -19,6 +19,7 @@
 package com.pinterest.secor.common;
 
 import com.pinterest.secor.message.ParsedMessage;
+import net.minidev.json.JSONValue;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 
@@ -220,7 +221,7 @@ public class LogFilePath {
     }
 
     public String getLogFilePath() {
-        if (StringUtils.isNotBlank(mOutputFilePattern)) {
+        if (StringUtils.isNotBlank( mOutputFilePattern)) {
             return getLogFilePath(mOutputFilePattern);
         }
         String basename = getLogFileBasename();
@@ -253,7 +254,7 @@ public class LogFilePath {
         valueMap.put("currentTimestamp", System.currentTimeMillis() + "");
         valueMap.put("currentTime", timeFormat.format(new Date()));
         valueMap.put("currentDate", dateFormat.format(new Date()));
-        System.out.println("messageing it " + mMessageIdentifier[0]);
+//        System.out.println("messageing it " + JSONValue.parse(message));
 
 
         return valueMap;

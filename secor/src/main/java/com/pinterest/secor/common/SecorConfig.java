@@ -859,4 +859,8 @@ public class SecorConfig {
     }
 
     public String[] getMessageChannelIdentifier() { return getStringArray("secor.partition.message.channel.identifier"); }
+
+    public boolean isMessageChannelIdentifierPrefixEnabled() {
+        return getBoolean("secor.partition.message.channel.prefix.identifier", false);
+    }
 }

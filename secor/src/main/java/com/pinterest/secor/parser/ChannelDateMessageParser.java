@@ -49,7 +49,7 @@ import com.pinterest.secor.message.Message;
  * @author Santhosh Vasabhaktula (santhosh.vasabhaktula@gmail.com)
  * 
  */
-public class ChannelDateMessageParser extends MessageParser {
+        public class ChannelDateMessageParser extends MessageParser {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PatternDateMessageParser.class);
 	protected static final String defaultDate = "1970-01-01";
@@ -70,7 +70,8 @@ public class ChannelDateMessageParser extends MessageParser {
 		if (null != partitionMapping) {
 			JSONObject jsonObject = (JSONObject) JSONValue.parse(partitionMapping);
 			for (Entry<String, Object> entry : jsonObject.entrySet()) {
-				partitionPrefixMap.put(entry.getKey(), entry.getValue().toString() + "/");
+				System.out.println("entry " + entry);
+				partitionPrefixMap.put(entry.getKey(), entry.getValue().toString() + "/" );
 			}
 		}
 	}
@@ -80,6 +81,7 @@ public class ChannelDateMessageParser extends MessageParser {
 
 		JSONObject jsonObject = (JSONObject) JSONValue.parse(message.getPayload());
 		boolean prefixEnabled = mConfig.isPartitionPrefixEnabled();
+		boolean messageChannelPrefixEnabled = mConfig.isMessageChannelIdentifierPrefixEnabled();
 		String result[] = {defaultDate};
 
 		if (jsonObject != null) {
@@ -90,7 +92,8 @@ public class ChannelDateMessageParser extends MessageParser {
 			if (fieldValue == null)
 				fieldValue = System.currentTimeMillis();
 
-			Object eventValue = jsonObject.get(mConfig.getPartitionPrefixIdentifier());
+			Object eventValue = mConfig.getPartitionPrefixIdentifier();
+			System.out.println("eventValue " + eventValue);
 			Object inputPattern = mConfig.getMessageTimestampInputPattern();
 			if (inputPattern != null) {
 				try {
@@ -110,9 +113,15 @@ public class ChannelDateMessageParser extends MessageParser {
 					String channel = getChannel(jsonObject);
 
 					String path = channel + "/";
-					result[0] = prefixEnabled
-							? getPrefix(eventValue.toString()) + path + outputFormatter.format(dateFormat)
-							: path + outputFormatter.format(dateFormat);
+					String messagePath = channel + "_";
+					result[0] = prefixEnabled && messageChannelPrefixEnabled
+							? getPrefix(eventValue.toString(), jsonObject, dateFormat) + messagePath + outputFormatter.format(dateFormat)
+							: messageChannelPrefixEnabled
+							? messagePath + outputFormatter.format(dateFormat)
+							: prefixEnabled
+							? getPrefix(eventValue.toString(), jsonObject, dateFormat) + path + outputFormatter.format(dateFormat)
+					        : path + outputFormatter.format(dateFormat);
+
 					return result;
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -124,16 +133,27 @@ public class ChannelDateMessageParser extends MessageParser {
 		return result;
 	}
 
-	private String getPrefix(String prefixIdentifier) {
-		String prefix = partitionPrefixMap.get(prefixIdentifier);
-		if (StringUtils.isBlank(prefix)) {
-			if (prefixIdentifier.contains("ME_")) {
-				prefix = "others/";
-			} else {
-				prefix = partitionPrefixMap.get("DEFAULT");
+	private String getPrefix(String prefixIdentifier, JSONObject jsonObject, Date dateFormat) {
+		String [] prefixed = new String[] {prefixIdentifier} ;
+		String prefix = partitionPrefixMap.get(prefixIdentifier) + outputFormatter.format(dateFormat) + "/";
+		System.out.println("prefix out " + prefix);
+		System.out.println("prefix out Identifier" + prefixIdentifier);
+
+		if (prefixIdentifier.contains("integrationAccountRef") || prefixIdentifier.contains("grower_id") ) {
+			System.out.println(JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class));
+			prefix = JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class) + "/" + prefix ;
+		}
+		else {
+			if (StringUtils.isBlank(prefix)) {
+				if (prefixIdentifier.contains("ME_")) {
+					prefix = "others/";
+				} else {
+					prefix = partitionPrefixMap.get("DEFAULT");
+				}
 			}
 		}
-		return prefix;
+			return prefix;
+
 	}
 
 	private String getChannel(JSONObject jsonObject) {
@@ -142,15 +162,16 @@ public class ChannelDateMessageParser extends MessageParser {
 		String[] channelIdentifier = mConfig.getMessageChannelIdentifier();
 		if (channelIdentifier.length > 0) {
 			try {
+				System.out.println("channel" + channelIdentifier);
 				// If channel identifier is common for both raw and summary events
 				if (channelIdentifier.length == 1) {
-					LOG.info("ji" + channelIdentifier[0]);
+//					LOG.info("ji" + message.getPayload());
 					channelStr = JsonPath.parse(jsonObject).read("$." + channelIdentifier[0], String.class);
 				}
 				// If channel identifier is different for raw and summary events. Ex: context.channel/dimensions.channel
 				else {
 					try {
-						LOG.info("ji ha " +  channelIdentifier[0]);
+						LOG.info("ji ha " +  JsonPath.parse(jsonObject).read("$." + channelIdentifier[0], String.class));
 						channelStr = JsonPath.parse(jsonObject).read("$." + channelIdentifier[0], String.class);
 					}
 					catch (PathNotFoundException e) {

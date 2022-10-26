@@ -93,7 +93,6 @@ import com.pinterest.secor.message.Message;
 				fieldValue = System.currentTimeMillis();
 
 			Object eventValue = mConfig.getPartitionPrefixIdentifier();
-			System.out.println("eventValue " + eventValue);
 			Object inputPattern = mConfig.getMessageTimestampInputPattern();
 			if (inputPattern != null) {
 				try {
@@ -113,14 +112,16 @@ import com.pinterest.secor.message.Message;
 					String channel = getChannel(jsonObject);
 
 					String path = channel + "/";
-					String messagePath = channel + "_";
+					String messagePath = channel;
 					result[0] = prefixEnabled && messageChannelPrefixEnabled
-							? getPrefix(eventValue.toString(), jsonObject, dateFormat) + messagePath + outputFormatter.format(dateFormat)
+							? getPrefix(eventValue.toString(), jsonObject) + outputFormatter.format(dateFormat) + "/" + messagePath //+ outputFormatter.format(dateFormat)
 							: messageChannelPrefixEnabled
-							? messagePath + outputFormatter.format(dateFormat)
+							? outputFormatter.format(dateFormat) + "/" + messagePath //+ outputFormatter.format(dateFormat)
 							: prefixEnabled
-							? getPrefix(eventValue.toString(), jsonObject, dateFormat) + path + outputFormatter.format(dateFormat)
+							? getPrefix(eventValue.toString(), jsonObject) + path + outputFormatter.format(dateFormat)
 					        : path + outputFormatter.format(dateFormat);
+
+					System.out.println("result  " + result);
 
 					return result;
 				} catch (Exception e) {
@@ -133,15 +134,27 @@ import com.pinterest.secor.message.Message;
 		return result;
 	}
 
-	private String getPrefix(String prefixIdentifier, JSONObject jsonObject, Date dateFormat) {
+	private String 	getPrefix(String prefixIdentifier, JSONObject jsonObject) {
 		String [] prefixed = new String[] {prefixIdentifier} ;
-		String prefix = partitionPrefixMap.get(prefixIdentifier) + outputFormatter.format(dateFormat) + "/";
+		String prefix = partitionPrefixMap.get(prefixIdentifier) ;
 		System.out.println("prefix out " + prefix);
 		System.out.println("prefix out Identifier" + prefixIdentifier);
 
 		if (prefixIdentifier.contains("integrationAccountRef") || prefixIdentifier.contains("grower_id") ) {
 			System.out.println(JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class));
-			prefix = JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class) + "/" + prefix ;
+			if (jsonObject.containsKey("type")) {
+				System.out.println("type"  + jsonObject.get("type"));
+				System.out.println("jsonObject " + jsonObject);
+				prefix = JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class) + "/" + jsonObject.get("type") + '/';
+			}
+			else {
+				if (jsonObject.containsKey("cropwise_type")){
+					System.out.println("cropwise_type"  + jsonObject.get("cropwise_type"));
+					System.out.println("jsonObject " + jsonObject);
+					prefix = JsonPath.parse(jsonObject).read("$.data." + prefixed[0], String.class) + "/" + jsonObject.get("cropwise_type") + '/';
+				}
+
+			}
 		}
 		else {
 			if (StringUtils.isBlank(prefix)) {

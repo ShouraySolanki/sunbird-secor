@@ -221,7 +221,7 @@ public class LogFilePath {
     }
 
     public String getLogFilePath() {
-        if (StringUtils.isNotBlank( mOutputFilePattern)) {
+        if (StringUtils.isNotBlank(mOutputFilePattern)) {
             return getLogFilePath(mOutputFilePattern);
         }
         String basename = getLogFileBasename();

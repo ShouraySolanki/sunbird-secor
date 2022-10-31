@@ -60,7 +60,7 @@ public class PartitionFinalizer {
         this.mKafkaClient.init(config);
         mZookeeperConnector = new ZookeeperConnector(mConfig);
         mMessageParser = (TimestampedMessageParser) ReflectionUtil.createMessageParser(
-          mConfig.getMessageParserClass(), mConfig);
+                mConfig.getMessageParserClass(), mConfig);
         mQuboleClient = new QuboleClient(mConfig);
         if (mConfig.getFileExtension() != null && !mConfig.getFileExtension().isEmpty()) {
             mFileExtension = mConfig.getFileExtension();
@@ -85,8 +85,8 @@ public class PartitionFinalizer {
             if (lastMessage == null || committedMessage == null) {
                 // This will happen if no messages have been posted to the given topic partition.
                 LOG.error("For topic {} partition {}, lastMessage: {}, committed: {}",
-                    topicPartition.getTopic(), topicPartition.getPartition(),
-                    lastMessage, committedMessage);
+                        topicPartition.getTopic(), topicPartition.getPartition(),
+                        lastMessage, committedMessage);
                 continue;
             }
             lastMessages.add(lastMessage);
@@ -98,7 +98,7 @@ public class PartitionFinalizer {
     private void finalizePartitionsUpTo(String topic, String[] uptoPartitions) throws Exception {
         String prefix = FileUtil.getPrefix(topic, mConfig);
         LOG.info("Finalize up to (but not include) {}, dim: {}",
-            uptoPartitions, uptoPartitions.length);
+                uptoPartitions, uptoPartitions.length);
 
         String[] previous = mMessageParser.getPreviousPartitions(uptoPartitions);
         Stack<String[]> toBeFinalized = new Stack<String[]>();
@@ -108,7 +108,7 @@ public class PartitionFinalizer {
         for (int i = 0; i < mLookbackPeriods; i++) {
             LOG.info("Looking for partition: " + Arrays.toString(previous));
             LogFilePath logFilePath = new LogFilePath(prefix, topic, previous,
-                mConfig.getGeneration(), 0, 0, mFileExtension, mConfig.getMessageChannelIdentifier());
+                    mConfig.getGeneration(), 0, 0, mFileExtension);
 
             if (FileUtil.s3PathPrefixIsAltered(logFilePath.getLogFilePath(), mConfig)) {
                 logFilePath = logFilePath.withPrefix(FileUtil.getS3AlternativePrefix(mConfig), mConfig);
@@ -119,7 +119,7 @@ public class PartitionFinalizer {
                 String successFilePath = logFileDir + "/_SUCCESS";
                 if (FileUtil.exists(successFilePath)) {
                     LOG.info(
-                        "SuccessFile exist already, short circuit return. " + successFilePath);
+                            "SuccessFile exist already, short circuit return. " + successFilePath);
                     break;
                 }
                 LOG.info("Folder {} exists and ready to be finalized.", logFileDir);
@@ -187,7 +187,7 @@ public class PartitionFinalizer {
 
             // Generate the SUCCESS file at the end
             LogFilePath logFilePath = new LogFilePath(prefix, topic, current,
-                mConfig.getGeneration(), 0, 0, mFileExtension, mConfig.getMessageChannelIdentifier());
+                    mConfig.getGeneration(), 0, 0, mFileExtension);
 
             if (FileUtil.s3PathPrefixIsAltered(logFilePath.getLogFilePath(), mConfig)) {
                 logFilePath = logFilePath.withPrefix(FileUtil.getS3AlternativePrefix(mConfig), mConfig);

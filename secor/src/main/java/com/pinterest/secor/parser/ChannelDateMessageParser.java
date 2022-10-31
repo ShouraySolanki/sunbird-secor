@@ -114,11 +114,11 @@ import com.pinterest.secor.message.Message;
 					String path = channel + "/";
 					String messagePath = channel;
 					result[0] = prefixEnabled && messageChannelPrefixEnabled
-							? getPrefix(eventValue.toString(), jsonObject) + outputFormatter.format(dateFormat) + "/" + messagePath //+ outputFormatter.format(dateFormat)
+							? getMutatePrefix(eventValue.toString(), jsonObject) + outputFormatter.format(dateFormat) + "/" + messagePath //+ outputFormatter.format(dateFormat)
 							: messageChannelPrefixEnabled
 							? outputFormatter.format(dateFormat) + "/" + messagePath //+ outputFormatter.format(dateFormat)
 							: prefixEnabled
-							? getPrefix(eventValue.toString(), jsonObject) + path + outputFormatter.format(dateFormat)
+							? getPrefix(eventValue.toString()) + path + outputFormatter.format(dateFormat)
 					        : path + outputFormatter.format(dateFormat);
 
 					System.out.println("result  " + result);
@@ -134,7 +134,19 @@ import com.pinterest.secor.message.Message;
 		return result;
 	}
 
-	private String 	getPrefix(String prefixIdentifier, JSONObject jsonObject) {
+	private String getPrefix(String prefixIdentifier) {
+		String prefix = partitionPrefixMap.get(prefixIdentifier);
+		if (StringUtils.isBlank(prefix)) {
+			if (prefixIdentifier.contains("ME_")) {
+				prefix = "others/";
+			} else {
+				prefix = partitionPrefixMap.get("DEFAULT");
+			}
+		}
+		return prefix;
+	}
+
+	private String 	getMutatePrefix(String prefixIdentifier, JSONObject jsonObject) {
 		String [] prefixed = new String[] {prefixIdentifier} ;
 		String prefix = partitionPrefixMap.get(prefixIdentifier) ;
 		System.out.println("prefix out " + prefix);
@@ -165,10 +177,9 @@ import com.pinterest.secor.message.Message;
 				}
 			}
 		}
-			return prefix;
+		return prefix;
 
 	}
-
 	private String getChannel(JSONObject jsonObject) {
 		String channelStr = "";
 		String finalChannelStr = "";

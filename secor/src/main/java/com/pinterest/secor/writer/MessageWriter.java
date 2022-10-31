@@ -52,7 +52,6 @@ public class MessageWriter {
     protected String mFileExtension;
     protected CompressionCodec mCodec;
     protected String mLocalPrefix;
-    protected String[] mMessageIdentifier;
     protected final int mGeneration;
 
     public MessageWriter(SecorConfig config, OffsetTracker offsetTracker,
@@ -74,8 +73,6 @@ public class MessageWriter {
 
         mLocalPrefix = mConfig.getLocalPath() + '/' + IdUtil.getLocalMessageDir();
         mGeneration = mConfig.getGeneration();
-        mMessageIdentifier = mConfig.getMessageChannelIdentifier();
-
     }
 
     public void adjustOffset(Message message, boolean isLegacyConsumer) throws IOException {
@@ -103,7 +100,7 @@ public class MessageWriter {
                 message.getKafkaPartition());
         long offset = mOffsetTracker.getAdjustedCommittedOffsetCount(topicPartition);
         LogFilePath path = new LogFilePath(mLocalPrefix, mGeneration, offset, message,
-                mFileExtension, mMessageIdentifier);
+                mFileExtension);
         FileWriter writer = mFileRegistry.getOrCreateWriter(path, mCodec);
         writer.write(new KeyValue(message.getOffset(), message.getKafkaKey(), message.getPayload(), message.getTimestamp(), message.getHeaders()));
         LOG.debug("appended message {} to file {}.  File length {}",

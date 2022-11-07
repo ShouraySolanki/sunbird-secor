@@ -19,7 +19,6 @@
 package com.pinterest.secor.common;
 
 import com.pinterest.secor.message.ParsedMessage;
-import net.minidev.json.JSONValue;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 
@@ -58,7 +57,6 @@ import org.apache.commons.lang.text.StrSubstitutor;
 public class LogFilePath {
     private final String mPrefix;
     private final String mTopic;
-    private final String[] mMessageIdentifier;
     private final String[] mPartitions;
     private final int mGeneration;
     private final int[] mKafkaPartitions;
@@ -71,7 +69,7 @@ public class LogFilePath {
 
 
     public LogFilePath(String prefix, String topic, String[] partitions, int generation,
-                       int[] kafkaPartitions, long[] offsets, String extension, String[] message_channel_identifier) {
+                       int[] kafkaPartitions, long[] offsets, String extension) {
         assert kafkaPartitions != null & kafkaPartitions.length >= 1
                 : "Wrong kafkaParttions: " + Arrays.toString(kafkaPartitions);
         assert offsets != null & offsets.length >= 1 : "Wrong offsets: " + Arrays.toString(offsets);
@@ -85,7 +83,6 @@ public class LogFilePath {
         }
         mPrefix = prefix;
         mTopic = topic;
-        mMessageIdentifier = Arrays.copyOf(message_channel_identifier, message_channel_identifier.length);
         mPartitions = Arrays.copyOf(partitions, partitions.length);
         mGeneration = generation;
         mKafkaPartitions = Arrays.copyOf(kafkaPartitions, kafkaPartitions.length);
@@ -100,19 +97,19 @@ public class LogFilePath {
     }
 
     public LogFilePath(String prefix, int generation, long lastCommittedOffset,
-                       ParsedMessage message, String extension, String[] message_channel_identifier) {
+                       ParsedMessage message, String extension) {
         this(prefix, message.getTopic(), message.getPartitions(), generation,
                 new int[]{message.getKafkaPartition()}, new long[]{lastCommittedOffset},
-                extension, message_channel_identifier);
+                extension);
     }
 
     public LogFilePath(String prefix, String topic, String[] partitions, int generation,
-                       int kafkaPartition, long offset, String extension, String[] message_channel_identifier) {
+                       int kafkaPartition, long offset, String extension) {
         this(prefix, topic, partitions, generation, new int[]{kafkaPartition},
-                new long[]{offset}, extension, message_channel_identifier);
+                new long[]{offset}, extension);
     }
 
-    public LogFilePath(String prefix, String path, String[] message_channel_identifier) {
+    public LogFilePath(String prefix, String path) {
         assert path.startsWith(prefix): path + ".startsWith(" + prefix + ")";
 
         mPrefix = prefix;
@@ -127,7 +124,6 @@ public class LogFilePath {
         assert pathElements.length >= 3: Arrays.toString(pathElements) + ".length >= 3";
 
         mTopic = pathElements[0];
-        mMessageIdentifier = message_channel_identifier;
         mPartitions = subArray(pathElements, 1, pathElements.length - 2);
 
         // Parse basename.
@@ -141,11 +137,10 @@ public class LogFilePath {
             mExtension = "";
         }
         String[] basenameElements = basename.split("_");
-        assert basenameElements.length == 4: Integer.toString(basenameElements.length) + " == 4";
+        assert basenameElements.length == 3: Integer.toString(basenameElements.length) + " == 3";
         mGeneration = Integer.parseInt(basenameElements[0]);
         mKafkaPartitions = new int[]{Integer.parseInt(basenameElements[1])};
         mOffsets = new long[]{Long.parseLong(basenameElements[2])};
-
     }
 
     private static String[] subArray(String[] array, int startIndex, int endIndex) {
@@ -157,15 +152,14 @@ public class LogFilePath {
     }
 
     public LogFilePath withPrefix(String prefix, SecorConfig mConfig) {
-        return new LogFilePath(prefix, mTopic, mPartitions, mGeneration, mKafkaPartitions, mOffsets, mExtension, mConfig, mMessageIdentifier);
+        return new LogFilePath(prefix, mTopic, mPartitions, mGeneration, mKafkaPartitions, mOffsets, mExtension, mConfig);
     }
 
     public LogFilePath(String prefix, String topic, String[] partitions, int generation, int[] kafkaPartition,
-                       long[] offset, String extension, SecorConfig config, String[] message_channel_identifier) {
+                       long[] offset, String extension, SecorConfig config) {
 
         mPrefix = prefix;
         mTopic = topic;
-        mMessageIdentifier = message_channel_identifier;
         mPartitions = partitions;
         mGeneration = generation;
         mKafkaPartitions = kafkaPartition;
@@ -247,16 +241,12 @@ public class LogFilePath {
         valueMap.put("randomHex", getRandomHex());
         valueMap.put("partition", mPartitions[0]);
         valueMap.put("topic", mTopic);
-        valueMap.put("message_channel_identifier", mMessageIdentifier[0]);
         valueMap.put("generation", mGeneration + "");
         valueMap.put("kafkaPartition", mKafkaPartitions[0] + "");
         valueMap.put("fmOffset", String.format("%020d", mOffsets[0]));
         valueMap.put("currentTimestamp", System.currentTimeMillis() + "");
         valueMap.put("currentTime", timeFormat.format(new Date()));
         valueMap.put("currentDate", dateFormat.format(new Date()));
-//        System.out.println("messageing it " + JSONValue.parse(message));
-
-
         return valueMap;
     }
 
@@ -279,9 +269,7 @@ public class LogFilePath {
     public String getTopic() {
         return mTopic;
     }
-    public String[] getMessageIdentifier() {
-        return mMessageIdentifier;
-    }
+
     public String[] getPartitions() {
         return mPartitions;
     }
@@ -324,7 +312,6 @@ public class LogFilePath {
         if (!Arrays.equals(mOffsets, that.mOffsets)) return false;
         if (!Arrays.equals(mPartitions, that.mPartitions)) return false;
         if (mPrefix != null ? !mPrefix.equals(that.mPrefix) : that.mPrefix != null) return false;
-        if (mMessageIdentifier != null ? !mMessageIdentifier.equals(that.mMessageIdentifier) : that.mMessageIdentifier != null) return false;
         if (mTopic != null ? !mTopic.equals(that.mTopic) : that.mTopic != null) return false;
 
         return true;
@@ -334,7 +321,6 @@ public class LogFilePath {
     public int hashCode() {
         int result = mPrefix != null ? mPrefix.hashCode() : 0;
         result = 31 * result + (mTopic != null ? mTopic.hashCode() : 0);
-        result = 31 * result + (mMessageIdentifier != null ? mMessageIdentifier.hashCode() : 0);
         result = 31 * result + (mPartitions != null ? Arrays.hashCode(mPartitions) : 0);
         result = 31 * result + mGeneration;
         result = 31 * result + Arrays.hashCode(mKafkaPartitions);

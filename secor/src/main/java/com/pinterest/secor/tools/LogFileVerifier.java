@@ -46,15 +46,14 @@ import java.util.TreeSet;
 public class LogFileVerifier {
     private SecorConfig mConfig;
     private String mTopic;
-    private String[] mMessageIdentifier;
     private HashMap<TopicPartition, SortedMap<Long, HashSet<LogFilePath>>>
-        mTopicPartitionToOffsetToFiles;
+            mTopicPartitionToOffsetToFiles;
 
     public LogFileVerifier(SecorConfig config, String topic) throws IOException {
         mConfig = config;
         mTopic = topic;
         mTopicPartitionToOffsetToFiles =
-            new HashMap<TopicPartition, SortedMap<Long, HashSet<LogFilePath>>>();
+                new HashMap<TopicPartition, SortedMap<Long, HashSet<LogFilePath>>>();
     }
 
     private String getTopicPrefix() throws IOException {
@@ -67,11 +66,11 @@ public class LogFileVerifier {
         String[] paths = FileUtil.listRecursively(topicPrefix);
         for (String path : paths) {
             if (!path.endsWith("/_SUCCESS")) {
-                LogFilePath logFilePath = new LogFilePath(prefix, path, mMessageIdentifier);
+                LogFilePath logFilePath = new LogFilePath(prefix, path);
                 TopicPartition topicPartition = new TopicPartition(logFilePath.getTopic(),
-                    logFilePath.getKafkaPartition());
+                        logFilePath.getKafkaPartition());
                 SortedMap<Long, HashSet<LogFilePath>> offsetToFiles =
-                    mTopicPartitionToOffsetToFiles.get(topicPartition);
+                        mTopicPartitionToOffsetToFiles.get(topicPartition);
                 if (offsetToFiles == null) {
                     offsetToFiles = new TreeMap<Long, HashSet<LogFilePath>>();
                     mTopicPartitionToOffsetToFiles.put(topicPartition, offsetToFiles);
@@ -94,7 +93,7 @@ public class LogFileVerifier {
             long lastOffset = Long.MAX_VALUE;
             Map.Entry entry = (Map.Entry) iterator.next();
             SortedMap<Long, HashSet<LogFilePath>> offsetToFiles =
-                (SortedMap<Long, HashSet<LogFilePath>>) entry.getValue();
+                    (SortedMap<Long, HashSet<LogFilePath>>) entry.getValue();
             for (long offset : offsetToFiles.keySet()) {
                 if (offset <= fromOffset || firstOffset == -2) {
                     firstOffset = offset;
@@ -131,23 +130,23 @@ public class LogFileVerifier {
             long previousMessageCount = -2L;
             Map.Entry entry = (Map.Entry) iterator.next();
             SortedMap<Long, HashSet<LogFilePath>> offsetToFiles =
-                (SortedMap<Long, HashSet<LogFilePath>>) entry.getValue();
+                    (SortedMap<Long, HashSet<LogFilePath>>) entry.getValue();
             for (HashSet<LogFilePath> logFilePaths : offsetToFiles.values()) {
                 int messageCount = 0;
                 long offset = -2;
                 for (LogFilePath logFilePath : logFilePaths) {
                     assert offset == -2 || offset == logFilePath.getOffset():
-                        Long.toString(offset) + " || " + offset + " == " + logFilePath.getOffset();
+                            Long.toString(offset) + " || " + offset + " == " + logFilePath.getOffset();
                     messageCount += getMessageCount(logFilePath);
                     offset = logFilePath.getOffset();
                 }
                 if (previousOffset != -2 && offset - previousOffset != previousMessageCount) {
                     TopicPartition topicPartition = (TopicPartition) entry.getKey();
                     throw new RuntimeException("Message count of " + previousMessageCount +
-                                               " in topic " + topicPartition.getTopic() +
-                                               " partition " + topicPartition.getPartition() +
-                                               " does not agree with adjacent offsets " +
-                                               previousOffset + " and " + offset);
+                            " in topic " + topicPartition.getTopic() +
+                            " partition " + topicPartition.getPartition() +
+                            " does not agree with adjacent offsets " +
+                            previousOffset + " and " + offset);
                 }
                 previousOffset = offset;
                 previousMessageCount = messageCount;
@@ -156,7 +155,7 @@ public class LogFileVerifier {
         }
         if (numMessages != -1 && aggregateMessageCount != numMessages) {
             throw new RuntimeException("Message count " + aggregateMessageCount +
-                " does not agree with the expected count " + numMessages);
+                    " does not agree with the expected count " + numMessages);
         }
     }
 
@@ -166,7 +165,7 @@ public class LogFileVerifier {
         while ((record = reader.next()) != null) {
             if (!offsets.add(record.getOffset())) {
                 throw new RuntimeException("duplicate key " + record.getOffset() + " found in file " +
-                    logFilePath.getLogFilePath());
+                        logFilePath.getLogFilePath());
             }
         }
         reader.close();
@@ -192,8 +191,8 @@ public class LogFileVerifier {
             for (Long offset : offsets) {
                 if (lastOffset != -2) {
                     assert lastOffset + 1 == offset: Long.toString(offset) + " + 1 == " + offset +
-                        " for topic " + topicPartition.getTopic() + " partition " +
-                        topicPartition.getPartition();
+                            " for topic " + topicPartition.getTopic() + " partition " +
+                            topicPartition.getPartition();
                 }
                 lastOffset = offset;
             }
